@@ -1,26 +1,32 @@
-name: Caching Demo
+name: Share data between jobs
 on: workflow_dispatch
 jobs:
-  build:
+  job_1:
+    name: Add 3 and 7
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - shell: bash
+        run: |
+          expr 3 + 7 > math-homework.txt
 
-      - name: Create File
-        run: echo $(date) > DemoFile.txt
-        
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-node-modules
+      - name: Upload math result for job 1
+        uses: actions/upload-artifact@v3
         with:
-          path: DemoFile.txt
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('cache-dependency-file.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+          name: homework
+          path: math-homework.txt
 
-      - name: Print Content of DemoFile
-        run: cat DemoFile.txt
+  job_2:
+    name: Download and Display Result
+    needs: job_1
+    runs-on: windows-latest
+    steps:
+      - name: Download math result for job 1
+        uses: actions/download-artifact@v3
+        with:
+          name: homework
+
+      - name: Print the result
+        shell: bash
+        run: |
+          value=`cat math-homework.txt`
+          echo The result is $value
